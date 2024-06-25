@@ -1,0 +1,17 @@
+version: '3'
+
+tasks:
+  init-db:
+    cmds:
+      - PGPASSWORD=postgres psql -U postgres -h localhost -f sql/init.sql
+  clean-db:
+    cmds:
+      - psql -U postgres --password postgres -h localhost -d tinyurl -f sql/cleandb.sql
+  start:
+    docker compose up 
+  stop:
+    docker compose stop 
+  restart:
+    docker compose restart 
+  down:
+    docker compose down 

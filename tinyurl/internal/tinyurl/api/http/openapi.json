@@ -1,0 +1,146 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Tiny URL API",
+    "description": "API for creating and retrieving shortened URLs.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://localhost:4010"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "URL": {
+        "type": "object",
+        "required": [
+          "shortenedUrl",
+          "originalUrl"
+        ],
+        "properties": {
+          "shortenedUrl": {
+            "type": "string",
+            "description": "The shortened URL",
+            "example": "https://localhost:4010/aY2Pv8"
+          },
+          "originalUrl": {
+            "type": "string",
+            "description": "The original URL",
+            "example": "https://www.google.com"
+          },
+          "expirationDate": {
+            "type": "integer",
+            "description": "Unix timestamp in seconds for the expiration date of the shortened URL."
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/create": {
+      "post": {
+        "summary": "Create a new shortened URL",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "originalUrl"
+                ],
+                "properties": {
+                  "originalUrl": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "The original URL to be shortened"
+                  },
+                  "expirationDate": {
+                    "type": "integer",
+                    "description": "Unix timestamp in seconds for the expiration date of the shortened URL."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "URL shortened successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/URL"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid URL supplied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid URL format"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{slug}": {
+      "get": {
+        "summary": "Redirect to the original URL",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "aY2Pv8"
+            },
+            "description": "The slug for the shortened URL"
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirecting to the original URL",
+            "headers": {
+              "Location": {
+                "description": "URL to redirect to",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "URL not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "URL not found"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

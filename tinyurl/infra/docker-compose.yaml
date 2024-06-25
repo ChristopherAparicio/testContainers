@@ -1,0 +1,43 @@
+version: '3.1'
+name: tinyurl
+
+services:
+  tinyurl:
+    networks:
+      - tiny
+    image: tinyurl:latest
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      - SERVER_PORT=8080
+      - DATABASE_HOST=db
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=tinyurl
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=postgres
+  db:
+    networks:
+      - tiny
+    image: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=tinyurl
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data 
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d postgres" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+networks:
+  tiny:
+volumes:
+  pgdata:
+
+
