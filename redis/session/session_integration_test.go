@@ -2,9 +2,12 @@ package session
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 	"testing"
 	"time"
 
@@ -50,7 +53,6 @@ func TestMain(m *testing.M) {
 
 func initCustomRedisContainer(ctx context.Context) (testcontainers.Container, error) {
 	req := testcontainers.ContainerRequest{
-		Name:         "redis-session-container",
 		Image:        "docker.io/redis:7",
 		ExposedPorts: []string{"6379/tcp"},
 		WaitingFor:   wait.ForLog("* Ready to accept connections"),
@@ -59,7 +61,6 @@ func initCustomRedisContainer(ctx context.Context) (testcontainers.Container, er
 	genericContainerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
-		Reuse:            true,
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
@@ -91,8 +92,20 @@ func getRedisContainerPort(ctx context.Context, redisContainer testcontainers.Co
 	return natPort.Int(), nil
 }
 
+func freezeContainer() {
+	if flag.Lookup("test.timeout").Value.String() == "0s" {
+		cancelChan := make(chan os.Signal, 1)
+
+		signal.Notify(cancelChan, syscall.SIGTERM, syscall.SIGINT)
+
+		_ = <-cancelChan
+		return
+	}
+}
+
 func TestRedisSessionRepository_Scenario(t *testing.T) {
 	ctx := context.Background()
+	defer freezeContainer()
 
 	t.Run("ReadSessionBeforeTTL", func(t *testing.T) {
 		sessionRedisRepository := NewRedisSessionRepository(redisClient, 10*time.Minute)
@@ -134,7 +147,5 @@ func TestRedisSessionRepository_Scenario(t *testing.T) {
 		assert.ErrorIs(t, err, redis.Nil)
 		assert.Nil(t, savedSession)
 	})
-
-	time.Sleep(300 * time.Second)
 
 }

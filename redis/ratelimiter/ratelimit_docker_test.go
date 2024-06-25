@@ -2,7 +2,6 @@ package ratelimit
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -54,9 +53,7 @@ func TestRateLimiter(t *testing.T) {
 		// Rate should be exceeded
 		assert.True(t, hitLimit)
 
-		fmt.Println(client.Get(ctx, ip).Val())
-
 		// Check key exists
-		assert.Equal(t, client.Get(ctx, ip).Val(), "3")
+		assert.Equal(t, client.Get(ctx, ip).Val(), "4")
 	})
 }

@@ -2,6 +2,10 @@ package ratelimit
 
 import (
 	"context"
+	"flag"
+	"os"
+	"os/signal"
+	"syscall"
 	"testing"
 	"time"
 
@@ -16,10 +20,10 @@ type RedisContainer struct {
 	testcontainers.Container
 }
 
-func initCustomValkeyContainer(ctx context.Context) (testcontainers.Container, error) {
+func initCustomKeyValueContainer(ctx context.Context, image string) (testcontainers.Container, error) {
 	req := testcontainers.ContainerRequest{
-		// Name:         "redis-session-container",
-		Image:        "docker.io/valkey/valkey:7",
+		Name:         "kv-session-container",
+		Image:        image,
 		ExposedPorts: []string{"6379/tcp"},
 		WaitingFor:   wait.ForLog("* Ready to accept connections"),
 	}
@@ -27,29 +31,7 @@ func initCustomValkeyContainer(ctx context.Context) (testcontainers.Container, e
 	genericContainerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
-		// Reuse:            true,
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
-	}
-
-	return &RedisContainer{Container: container}, nil
-}
-
-func initCustomRedisContainer(ctx context.Context) (testcontainers.Container, error) {
-	req := testcontainers.ContainerRequest{
-		// Name:         "redis-session-container",
-		Image:        "docker.io/redis:7",
-		ExposedPorts: []string{"6379/tcp"},
-		WaitingFor:   wait.ForLog("* Ready to accept connections"),
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-		// Reuse:            true,
+		Reuse:            true,
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
@@ -93,17 +75,33 @@ func newDefaultRedisClient() (*redis.Client, error) {
 	return client, nil
 }
 
+func freezeContainer() {
+	if flag.Lookup("test.timeout").Value.String() == "0s" {
+		cancelChan := make(chan os.Signal, 1)
+
+		signal.Notify(cancelChan, syscall.SIGTERM, syscall.SIGINT)
+
+		_ = <-cancelChan
+		return
+	}
+}
+
 func TestRateLimiterTestContainer(t *testing.T) {
 	ctx := context.Background()
+	defer freezeContainer()
 
-	// client, err := newDefaultRedisClient()
-	// assert.NoError(t, err)
+	// 1
+	client, err := newDefaultRedisClient()
 
-	container, err := initCustomValkeyContainer(ctx)
-	// container, err := initCustomRedisContainer(ctx)
+	// 2
+	// container, err := initCustomKeyValueContainer(ctx, "docker.io/redis:7")
+
+	// 3
+	// container, err := initCustomKeyValueContainer(ctx, "docker.io/valkey/valkey:7")
+
 	assert.NoError(t, err)
 
-	client, err := newRedisClientContainer(ctx, container)
+	// client, err := newRedisClientContainer(ctx, container)
 	assert.NoError(t, err)
 
 	rate := int64(3)

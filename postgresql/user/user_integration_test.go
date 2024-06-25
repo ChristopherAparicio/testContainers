@@ -31,12 +31,14 @@ func initPostgresContainer(ctx context.Context, dbConfig DBConfig) (*postgresmod
 			},
 		}),
 
-		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
-			Reuse: true,
-			ContainerRequest: testcontainers.ContainerRequest{
-				Name: "postgres-container",
-			},
-		}),
+		/*
+			testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
+				Reuse:            true,
+				ContainerRequest: testcontainers.ContainerRequest{
+					// Name: "postgres-container",
+				},
+			}),
+		*/
 
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("database system is ready to accept connections").
